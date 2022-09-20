@@ -1,6 +1,8 @@
 import { INestApplication } from '@nestjs/common'
 import { Response } from 'supertest'
 import {
+  AdminClusters,
+  AdminCreateApp,
   AdminCreateUser,
   AdminDeleteUser,
   AdminUpdateUser,
@@ -8,14 +10,17 @@ import {
   AdminUserCreateInput,
   AdminUsers,
   AdminUserUpdateInput,
+  UserAppEnv,
+  UserApps,
   UserCluster,
   UserClusters,
   UserRole,
   UserSearchUserInput,
   UserSearchUsers,
+  UserTransactions,
 } from '../generated/api-sdk'
 import { ADMIN_USERNAME, initializeE2eApp, runGraphQLQuery, runGraphQLQueryAdmin, runLoginQuery } from '../helpers'
-import { uniq } from '../helpers/uniq'
+import { uniq, uniqInt } from '../helpers/uniq'
 
 function expectUnauthorized(res: Response) {
   expect(res).toHaveProperty('text')
@@ -137,6 +142,47 @@ describe('User (e2e)', () => {
             const data = res.body.data?.items
 
             expect(data.length).toBeGreaterThan(1)
+          })
+      })
+
+      it('should find a list of Admin Clusters', async () => {
+        return runGraphQLQueryAdmin(app, token, AdminClusters)
+          .expect(200)
+          .expect((res) => {
+            expect(res).toHaveProperty('body.data')
+            const data = res.body.data?.items
+
+            expect(data.length).toBeGreaterThan(1)
+          })
+      })
+
+      it('should find a list of Apps', async () => {
+        return runGraphQLQueryAdmin(app, token, UserApps)
+          .expect(200)
+          .expect((res) => {
+            expect(res).toHaveProperty('body.data')
+            const data = res.body.data?.items
+
+            expect(data.length).toBeGreaterThan(1)
+          })
+      })
+
+      it('should search an AppEnv by appEnvId', async () => {
+        const name = uniq('app-')
+        const index = uniqInt()
+        const createdApp = await runGraphQLQueryAdmin(app, token, AdminCreateApp, {
+          input: { index, name },
+        })
+        const appId = createdApp.body.data.created.id
+        const appEnvId = createdApp.body.data.created.envs[0].id
+
+        return runGraphQLQueryAdmin(app, token, UserAppEnv, { appId, appEnvId })
+          .expect(200)
+          .expect((res) => {
+            expect(res).toHaveProperty('body.data')
+            const data = res.body.data?.item
+
+            expect(data.app.id).toBe(appId)
           })
       })
 
