@@ -30,7 +30,7 @@ export function parseTransactionSimulation(simulation: SimulatedTransactionRespo
   const logs = simulation.logs ? simulation.logs : undefined
   if (simulation?.err && typeof simulation.err === 'object' && 'InstructionError' in simulation.err) {
     const [instructionIndex, instructionError] = simulation.err['InstructionError'] as [number, string?]
-    const { Custom } = instructionError as any
+    const { Custom } = instructionError as unknown as { Custom: number }
     const error = Custom !== undefined ? errorMessageMap(Custom) : errorMessageMap(instructionError)
     throw new TransactionError(error.message, logs, error.type, instructionIndex)
   }
