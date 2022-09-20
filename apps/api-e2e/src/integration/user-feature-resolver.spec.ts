@@ -8,7 +8,11 @@ import {
   AdminUserCreateInput,
   AdminUsers,
   AdminUserUpdateInput,
+  UserCluster,
+  UserClusters,
   UserRole,
+  UserSearchUserInput,
+  UserSearchUsers,
 } from '../generated/api-sdk'
 import { ADMIN_USERNAME, initializeE2eApp, runGraphQLQuery, runGraphQLQueryAdmin, runLoginQuery } from '../helpers'
 import { uniq } from '../helpers/uniq'
@@ -107,6 +111,50 @@ describe('User (e2e)', () => {
 
             expect(data.length).toBeGreaterThan(1)
             expect(data.find((user) => user.username === username)).toBeDefined()
+          })
+      })
+
+      it('should find a cluster', async () => {
+        const clusterId = 'solana-devnet'
+
+        return runGraphQLQueryAdmin(app, token, UserCluster, { clusterId })
+          .expect(200)
+          .expect((res) => {
+            expect(res).toHaveProperty('body.data')
+            const data = res.body.data?.item
+
+            expect(data.id).toBe('solana-devnet')
+            expect(data.status).toBe('Active')
+            expect(data.type).toBe('SolanaDevnet')
+          })
+      })
+
+      it('should find a list of clusters', async () => {
+        return runGraphQLQueryAdmin(app, token, UserClusters)
+          .expect(200)
+          .expect((res) => {
+            expect(res).toHaveProperty('body.data')
+            const data = res.body.data?.items
+
+            expect(data.length).toBeGreaterThan(1)
+          })
+      })
+
+      it('should search for users with a provided string', async () => {
+        const input: UserSearchUserInput = {
+          query: `alice`,
+        }
+
+        return runGraphQLQueryAdmin(app, token, UserSearchUsers, { input })
+          .expect(200)
+          .expect((res) => {
+            expect(res).toHaveProperty('body.data')
+            const data = res.body.data?.items
+
+            expect(data.length).toEqual(1)
+            expect(data[0].id).toBe('alice')
+            expect(data[0].name).toBe('Alice')
+            expect(data[0].email).toBe('alice@example.com')
           })
       })
 
@@ -256,11 +304,7 @@ describe('User (e2e)', () => {
 
         return runGraphQLQuery(app, AdminCreateUser, { input })
           .expect(200)
-          .expect((res) => {
-            expect(res).toHaveProperty('text')
-            const errors = JSON.parse(res.text).errors
-            expect(errors[0].message).toEqual('Unauthorized')
-          })
+          .expect((res) => expectUnauthorized(res))
       })
 
       it('should not update a user', async () => {
