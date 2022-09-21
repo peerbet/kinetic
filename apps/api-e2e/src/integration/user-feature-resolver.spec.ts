@@ -12,10 +12,12 @@ import {
   AdminUserUpdateInput,
   UserApp,
   UserAppEnv,
+  UserAppEnvCreateInput,
   UserAppEnvStats,
   UserApps,
   UserCluster,
   UserClusters,
+  UserCreateAppEnv,
   UserRole,
   UserSearchUserInput,
   UserSearchUsers,
@@ -254,6 +256,30 @@ describe('User (e2e)', () => {
             expect(data.username).toEqual(username)
           })
       })
+
+      it('should create an App Env', async () => {
+        const name = uniq('app-')
+        const index = uniqInt()
+        const createdApp = await runGraphQLQueryAdmin(app, token, AdminCreateApp, {
+          input: { index, name },
+        })
+        const appId = createdApp.body.data.created.id
+        const clusterId = 'solana-devnet'
+        const input: UserAppEnvCreateInput = {
+          name: 'Solana Devnet',
+        }
+
+        return runGraphQLQueryAdmin(app, token, UserCreateAppEnv, { appId, clusterId, input })
+          .expect(200)
+          .expect((res) => {
+            expect(res).toHaveProperty('body.data')
+            const data = res.body.data?.created
+
+            expect(data.app.id).toBe(appId)
+            expect(data.cluster.id).toBe(clusterId)
+            expect(data.cluster.name).toBe(input.name)
+          })
+      })
     })
   })
 
@@ -414,6 +440,83 @@ describe('User (e2e)', () => {
 
       it('should not delete a user', async () => {
         return runGraphQLQuery(app, AdminDeleteUser, { userId })
+          .expect(200)
+          .expect((res) => expectUnauthorized(res))
+      })
+
+      it('should not find a cluster', async () => {
+        const clusterId = 'solana-devnet'
+
+        return runGraphQLQuery(app, UserCluster, { clusterId })
+          .expect(200)
+          .expect((res) => expectUnauthorized(res))
+      })
+
+      it('should not find a list of clusters', async () => {
+        return runGraphQLQuery(app, UserClusters)
+          .expect(200)
+          .expect((res) => expectUnauthorized(res))
+      })
+
+      it('should not find a list of Admin Clusters', async () => {
+        return runGraphQLQuery(app, AdminClusters)
+          .expect(200)
+          .expect((res) => expectUnauthorized(res))
+      })
+
+      it('should not find a list of Apps', async () => {
+        return runGraphQLQuery(app, UserApps)
+          .expect(200)
+          .expect((res) => expectUnauthorized(res))
+      })
+
+      it('should not find a list of Env Stats', async () => {
+        const name = uniq('app-')
+        const index = uniqInt()
+        const createdApp = await runGraphQLQueryAdmin(app, token, AdminCreateApp, {
+          input: { index, name },
+        })
+
+        const appEnvId = createdApp.body.data.created.envs[0].id
+
+        return runGraphQLQuery(app, UserAppEnvStats, { appEnvId })
+          .expect(200)
+          .expect((res) => expectUnauthorized(res))
+      })
+
+      it('should not search an AppEnv by appEnvId', async () => {
+        const name = uniq('app-')
+        const index = uniqInt()
+        const createdApp = await runGraphQLQueryAdmin(app, token, AdminCreateApp, {
+          input: { index, name },
+        })
+        const appId = createdApp.body.data.created.id
+        const appEnvId = createdApp.body.data.created.envs[0].id
+
+        return runGraphQLQuery(app, UserAppEnv, { appId, appEnvId })
+          .expect(200)
+          .expect((res) => expectUnauthorized(res))
+      })
+
+      it('should not search an App by appId', async () => {
+        const name = uniq('app-')
+        const index = uniqInt()
+        const createdApp = await runGraphQLQueryAdmin(app, token, AdminCreateApp, {
+          input: { index, name },
+        })
+        const appId = createdApp.body.data.created.id
+
+        return runGraphQLQuery(app, UserApp, { appId })
+          .expect(200)
+          .expect((res) => expectUnauthorized(res))
+      })
+
+      it('should not search for users with a provided string', async () => {
+        const input: UserSearchUserInput = {
+          query: `alice`,
+        }
+
+        return runGraphQLQuery(app, UserSearchUsers, { input })
           .expect(200)
           .expect((res) => expectUnauthorized(res))
       })
