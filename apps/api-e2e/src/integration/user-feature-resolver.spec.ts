@@ -10,14 +10,15 @@ import {
   AdminUserCreateInput,
   AdminUsers,
   AdminUserUpdateInput,
+  UserApp,
   UserAppEnv,
+  UserAppEnvStats,
   UserApps,
   UserCluster,
   UserClusters,
   UserRole,
   UserSearchUserInput,
   UserSearchUsers,
-  UserTransactions,
 } from '../generated/api-sdk'
 import { ADMIN_USERNAME, initializeE2eApp, runGraphQLQuery, runGraphQLQueryAdmin, runLoginQuery } from '../helpers'
 import { uniq, uniqInt } from '../helpers/uniq'
@@ -167,6 +168,26 @@ describe('User (e2e)', () => {
           })
       })
 
+      it('should find a list of Env Stats', async () => {
+        const name = uniq('app-')
+        const index = uniqInt()
+        const createdApp = await runGraphQLQueryAdmin(app, token, AdminCreateApp, {
+          input: { index, name },
+        })
+
+        const appEnvId = createdApp.body.data.created.envs[0].id
+
+        return runGraphQLQueryAdmin(app, token, UserAppEnvStats, { appEnvId })
+          .expect(200)
+          .expect((res) => {
+            expect(res).toHaveProperty('body.data')
+            console.log(res.body.data)
+            const data = res.body.data?.stats
+
+            expect(data).toHaveProperty('transactionCount')
+          })
+      })
+
       it('should search an AppEnv by appEnvId', async () => {
         const name = uniq('app-')
         const index = uniqInt()
@@ -183,6 +204,24 @@ describe('User (e2e)', () => {
             const data = res.body.data?.item
 
             expect(data.app.id).toBe(appId)
+          })
+      })
+
+      it('should search an App by appId', async () => {
+        const name = uniq('app-')
+        const index = uniqInt()
+        const createdApp = await runGraphQLQueryAdmin(app, token, AdminCreateApp, {
+          input: { index, name },
+        })
+        const appId = createdApp.body.data.created.id
+
+        return runGraphQLQueryAdmin(app, token, UserApp, { appId })
+          .expect(200)
+          .expect((res) => {
+            expect(res).toHaveProperty('body.data')
+            const data = res.body.data?.item
+
+            expect(data.id).toBe(appId)
           })
       })
 
