@@ -133,8 +133,6 @@ export class ApiAppUserDataAccessService {
 
   async userUpdateAppMint(userId: string, appId: string, appMintId: string, data: UserAppMintUpdateInput) {
     await this.data.ensureAppOwner(userId, appId)
-    const appMints = await this.data.appMint.findMany()
-
     return this.data.appMint.update({
       where: { id: appMintId },
       data,
