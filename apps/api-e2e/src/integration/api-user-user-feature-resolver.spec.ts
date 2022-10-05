@@ -46,9 +46,7 @@ describe('User (e2e)', () => {
           const data = res.body.data?.items
 
           expect(data.length).toEqual(1)
-          expect(data[0].id).toBe('alice')
-          expect(data[0].name).toBe('Alice')
-          expect(data[0].email).toBe('alice@example.com')
+          expect(data[0].name).toBe('alice')
         })
     })
   })

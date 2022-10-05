@@ -1,10 +1,7 @@
 import { INestApplication } from '@nestjs/common'
 import { Response } from 'supertest'
 import {
-  AdminClusters,
   AdminCreateApp,
-  AdminMintCreate,
-  AdminMintCreateInput,
   UserApp,
   UserAppEnv,
   UserAppEnvCreateInput,
@@ -67,17 +64,6 @@ describe('User (e2e)', () => {
 
       it('should find a list of clusters', async () => {
         return runGraphQLQueryAdmin(app, token, UserClusters)
-          .expect(200)
-          .expect((res) => {
-            expect(res).toHaveProperty('body.data')
-            const data = res.body.data?.items
-
-            expect(data.length).toBeGreaterThan(1)
-          })
-      })
-
-      it('should find a list of Admin Clusters', async () => {
-        return runGraphQLQueryAdmin(app, token, AdminClusters)
           .expect(200)
           .expect((res) => {
             expect(res).toHaveProperty('body.data')
@@ -177,68 +163,6 @@ describe('User (e2e)', () => {
             expect(data.cluster.name).toBe(input.name)
           })
       })
-
-      it('should create an App Mint', async () => {
-        const name = uniq('app-')
-        const index = uniqInt()
-        await runGraphQLQueryAdmin(app, token, AdminCreateApp, {
-          input: { index, name },
-        })
-        const clusterId = 'solana-devnet'
-        const input: AdminMintCreateInput = {
-          address: '3SaUThdYFoUX2FYUi9ZPf2TKTu3UYKhNHhXb2Y6najRg',
-          clusterId,
-          decimals: 9,
-          name: 'Hello Token',
-          symbol: 'HIT',
-        }
-
-        return runGraphQLQueryAdmin(app, token, AdminMintCreate, { input })
-          .expect(200)
-          .expect((res) => {
-            expect(res).toHaveProperty('body.data')
-            const mint = res.body.data?.adminMintCreate.mints.filter((mint) => mint.address === input.address)[0]
-
-            expect(mint.address).toBe(input.address)
-            expect(mint.decimals).toBe(input.decimals)
-            expect(mint.name).toBe(input.name)
-            expect(mint.symbol).toBe(input.symbol)
-          })
-      })
-
-      it('should update an AppMint', async () => {
-        const name = uniq('app-')
-        const index = uniqInt()
-        const createdApp = await runGraphQLQueryAdmin(app, token, AdminCreateApp, {
-          input: { index, name },
-        })
-        const appId = createdApp.body.data.created.id
-
-        const clusterId = 'solana-devnet'
-        const address = 'GqWbZDQaeJsiscgtGpDrJsNCxxeuHqJCGKs4oWBY1aYQ'
-        const inputMint: AdminMintCreateInput = {
-          address,
-          clusterId,
-          decimals: 4,
-          name: 'GTA LIVE',
-          symbol: 'GTA',
-        }
-        const createdMint = await runGraphQLQueryAdmin(app, token, AdminMintCreate, { input: inputMint })
-        const appMint = createdMint.body.data?.adminMintCreate
-
-        const input: UserAppMintUpdateInput = {
-          addMemo: true,
-        }
-
-        return runGraphQLQueryAdmin(app, token, UserUpdateAppMint, { appId, appMintId: appMint.id, input })
-          .expect(200)
-          .expect((res) => {
-            expect(res).toHaveProperty('body.data')
-            const data = res.body.data?.updated
-
-            expect(data).not.toBeNull()
-          })
-      })
     })
   })
 
@@ -254,12 +178,6 @@ describe('User (e2e)', () => {
 
       it('should not find a list of clusters', async () => {
         return runGraphQLQuery(app, UserClusters)
-          .expect(200)
-          .expect((res) => expectUnauthorized(res))
-      })
-
-      it('should not find a list of Admin Clusters', async () => {
-        return runGraphQLQuery(app, AdminClusters)
           .expect(200)
           .expect((res) => expectUnauthorized(res))
       })
