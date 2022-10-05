@@ -287,7 +287,7 @@ describe('App (e2e)', () => {
             expect(data.webhookEventUrl).toEqual(input.webhookEventUrl)
             expect(data.webhookVerifyEnabled).toEqual(input.webhookVerifyEnabled)
             expect(data.webhookVerifyUrl).toEqual(input.webhookVerifyUrl)
-            expect(data.mints.length).toEqual(1)
+            expect(data.mints.length).toEqual(2)
             expect(data.mints[0].mint.symbol).toEqual('KIN')
             expect(data.mints[0].wallet.publicKey).toBeDefined()
             expect(data.wallets).toBeDefined()
