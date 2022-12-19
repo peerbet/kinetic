@@ -147,9 +147,8 @@ export class KineticSdkInternal {
   }
 
   async getBalance(options: GetBalanceOptions): Promise<BalanceResponse> {
-    const commitment = options.commitment || Commitment.Finalized
     return this.accountApi
-      .getBalance(this.sdkConfig.environment, this.sdkConfig.index, options.account.toString(), commitment)
+      .getBalance(this.sdkConfig.environment, this.sdkConfig.index, options.account.toString())
       .then((res) => res.data)
       .catch((err) => {
         throw new Error(err?.response?.data?.message ?? 'Unknown error')

@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { VersionedMessage } from '@solana/web3.js'
+import { Message } from '@solana/web3.js'
 
 export class TransactionData {
   @ApiProperty()
-  message: VersionedMessage
+  message: Message
   @ApiProperty()
   signatures: string[]
 }

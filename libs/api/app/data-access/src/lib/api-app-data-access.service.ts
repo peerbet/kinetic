@@ -1,5 +1,4 @@
 import { ApiCoreDataAccessService } from '@kin-kinetic/api/core/data-access'
-import { ApiSolanaDataAccessService } from '@kin-kinetic/api/solana/data-access'
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
 import { Counter } from '@opentelemetry/api-metrics'
 import { Prisma } from '@prisma/client'
@@ -38,7 +37,7 @@ export class ApiAppDataAccessService implements OnModuleInit {
   private getAppConfigErrorCounter: Counter
   private getAppConfigSuccessCounter: Counter
 
-  constructor(private readonly data: ApiCoreDataAccessService, private readonly solana: ApiSolanaDataAccessService) {}
+  constructor(private readonly data: ApiCoreDataAccessService) {}
 
   async onModuleInit() {
     this.getAppConfigErrorCounter = this.data.metrics.getCounter('api_app_get_app_config_error_counter', {
@@ -49,8 +48,8 @@ export class ApiAppDataAccessService implements OnModuleInit {
     })
   }
 
-  async getAppConfig(appKey: string): Promise<AppConfig> {
-    const appEnv = await this.data.getAppEnvironmentByAppKey(appKey)
+  async getAppConfig(environment: string, index: number): Promise<AppConfig> {
+    const { appEnv, appKey } = await this.data.getAppEnvironment(environment, index)
     if (!appEnv) {
       this.getAppConfigErrorCounter.add(1, { appKey })
       throw new NotFoundException(`App not found :(`)
@@ -99,9 +98,9 @@ export class ApiAppDataAccessService implements OnModuleInit {
     }
   }
 
-  async getAppHealth(appKey: string): Promise<AppHealth> {
+  async getAppHealth(environment: string, index: number): Promise<AppHealth> {
     const isKineticOk = true
-    const solana = await this.solana.getConnection(appKey)
+    const solana = await this.data.getSolanaConnection(environment, index)
 
     const isSolanaOk = await solana.healthCheck()
 

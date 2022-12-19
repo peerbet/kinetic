@@ -1,4 +1,3 @@
-import { getAppKey } from '@kin-kinetic/api/core/util'
 import {
   ApiTransactionDataAccessService,
   GetTransactionResponse,
@@ -22,7 +21,7 @@ export class ApiTransactionFeatureController {
   @ApiParam({ name: 'index', type: 'integer' })
   @ApiResponse({ type: LatestBlockhashResponse })
   getLatestBlockhash(@Param('environment') environment: string, @Param('index', ParseIntPipe) index: number) {
-    return this.service.getLatestBlockhash(getAppKey(environment, index))
+    return this.service.getLatestBlockhash(environment, index)
   }
 
   @Get('minimum-rent-exemption-balance/:environment/:index')
@@ -34,7 +33,7 @@ export class ApiTransactionFeatureController {
     @Param('index', ParseIntPipe) index: number,
     @Param('input') input: MinimumRentExemptionBalanceRequest,
   ) {
-    return this.service.getMinimumRentExemptionBalance(getAppKey(environment, index), input)
+    return this.service.getMinimumRentExemptionBalance(environment, index, input)
   }
 
   @Post('make-transfer')
@@ -54,6 +53,6 @@ export class ApiTransactionFeatureController {
     @Param('index', ParseIntPipe) index: number,
     @Param('signature') signature: string,
   ) {
-    return this.service.getTransaction(getAppKey(environment, index), signature)
+    return this.service.getTransaction(environment, index, signature)
   }
 }

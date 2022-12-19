@@ -1,8 +1,7 @@
 import { ApiCoreDataAccessService } from '@kin-kinetic/api/core/data-access'
-import { getAppKey } from '@kin-kinetic/api/core/util'
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { AdminQueueLoadInput } from './dto/admin-queue-load.input'
-import { JobStatus, JobStatusClean } from './entity/job-status.enum'
+import { JobStatus } from './entity/job-status.enum'
 import { Job } from './entity/job.entity'
 import { QueueType } from './entity/queue-type.enum'
 import { Queue } from './entity/queue.entity'
@@ -35,7 +34,7 @@ export class ApiQueueDataAccessService {
   async adminQueueJobs(type: QueueType, statuses: JobStatus[]): Promise<Job[]> {
     if (type === QueueType.CloseAccount) {
       const jobs = await this.accountQueue.queue.getJobs(
-        statuses.map((status) => status.toLowerCase() as JobStatus),
+        statuses.map((status) => status.toLowerCase() as any),
         0,
         1000,
       )
@@ -59,7 +58,7 @@ export class ApiQueueDataAccessService {
       if (!status) {
         await this.accountQueue.queue.obliterate()
       } else {
-        await this.accountQueue.queue.clean(1000, status.toLowerCase() as JobStatusClean)
+        await this.accountQueue.queue.clean(1000, status.toLowerCase() as any)
       }
       return true
     }
@@ -98,7 +97,6 @@ export class ApiQueueDataAccessService {
   }
 
   async loadAccountQueue({ environment, index, payload }: AdminQueueLoadInput) {
-    const appKey = getAppKey(environment, index)
     const accounts = payload
       .toString()
       .split(/\r?\n/)
@@ -107,8 +105,11 @@ export class ApiQueueDataAccessService {
 
     const uniqueAccounts = [...new Set(accounts)]
 
-    this.logger.debug(`Loading ${uniqueAccounts.length} accounts into ${QueueType.CloseAccount} queue in app ${appKey}`)
-    const appEnv = await this.data.getAppEnvironmentByAppKey(appKey)
+    this.logger.debug(
+      `Loading ${uniqueAccounts.length} accounts into ${QueueType.CloseAccount} ${environment}-${index} queue`,
+    )
+
+    const { appEnv } = await this.data.getAppEnvironment(environment, index)
 
     // TODO: Add support for specifying which Mint accounts to close
     // Currently, only the token account for the default Mint is closed

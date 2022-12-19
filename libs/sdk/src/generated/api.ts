@@ -596,19 +596,6 @@ export interface ConfirmedTransactionMeta {
 /**
  *
  * @export
- * @interface Context
- */
-export interface Context {
-  /**
-   *
-   * @type {number}
-   * @memberof Context
-   */
-  slot?: number | null
-}
-/**
- *
- * @export
  * @interface CreateAccountRequest
  */
 export interface CreateAccountRequest {
@@ -675,10 +662,10 @@ export interface GetTransactionResponse {
   signature: string
   /**
    *
-   * @type {RpcResponseAndContext}
+   * @type {SignatureStatus}
    * @memberof GetTransactionResponse
    */
-  status: RpcResponseAndContext
+  status: SignatureStatus
   /**
    *
    * @type {TransactionResponse}
@@ -847,25 +834,6 @@ export interface RequestAirdropResponse {
    * @memberof RequestAirdropResponse
    */
   signature: string
-}
-/**
- *
- * @export
- * @interface RpcResponseAndContext
- */
-export interface RpcResponseAndContext {
-  /**
-   *
-   * @type {Context}
-   * @memberof RpcResponseAndContext
-   */
-  context: Context
-  /**
-   *
-   * @type {SignatureStatus}
-   * @memberof RpcResponseAndContext
-   */
-  value: SignatureStatus
 }
 /**
  *
@@ -1453,7 +1421,6 @@ export const AccountApiAxiosParamCreator = function (configuration?: Configurati
      * @param {string} environment
      * @param {number} index
      * @param {string} accountId
-     * @param {Commitment} commitment
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
@@ -1461,7 +1428,6 @@ export const AccountApiAxiosParamCreator = function (configuration?: Configurati
       environment: string,
       index: number,
       accountId: string,
-      commitment: Commitment,
       options: AxiosRequestConfig = {},
     ): Promise<RequestArgs> => {
       // verify required parameter 'environment' is not null or undefined
@@ -1470,8 +1436,6 @@ export const AccountApiAxiosParamCreator = function (configuration?: Configurati
       assertParamExists('getBalance', 'index', index)
       // verify required parameter 'accountId' is not null or undefined
       assertParamExists('getBalance', 'accountId', accountId)
-      // verify required parameter 'commitment' is not null or undefined
-      assertParamExists('getBalance', 'commitment', commitment)
       const localVarPath = `/api/account/balance/{environment}/{index}/{accountId}`
         .replace(`{${'environment'}}`, encodeURIComponent(String(environment)))
         .replace(`{${'index'}}`, encodeURIComponent(String(index)))
@@ -1486,10 +1450,6 @@ export const AccountApiAxiosParamCreator = function (configuration?: Configurati
       const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options }
       const localVarHeaderParameter = {} as any
       const localVarQueryParameter = {} as any
-
-      if (commitment !== undefined) {
-        localVarQueryParameter['commitment'] = commitment
-      }
 
       setSearchParams(localVarUrlObj, localVarQueryParameter)
       let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {}
@@ -1662,7 +1622,6 @@ export const AccountApiFp = function (configuration?: Configuration) {
      * @param {string} environment
      * @param {number} index
      * @param {string} accountId
-     * @param {Commitment} commitment
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
@@ -1670,16 +1629,9 @@ export const AccountApiFp = function (configuration?: Configuration) {
       environment: string,
       index: number,
       accountId: string,
-      commitment: Commitment,
       options?: AxiosRequestConfig,
     ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<BalanceResponse>> {
-      const localVarAxiosArgs = await localVarAxiosParamCreator.getBalance(
-        environment,
-        index,
-        accountId,
-        commitment,
-        options,
-      )
+      const localVarAxiosArgs = await localVarAxiosParamCreator.getBalance(environment, index, accountId, options)
       return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)
     },
     /**
@@ -1778,20 +1730,11 @@ export const AccountApiFactory = function (configuration?: Configuration, basePa
      * @param {string} environment
      * @param {number} index
      * @param {string} accountId
-     * @param {Commitment} commitment
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    getBalance(
-      environment: string,
-      index: number,
-      accountId: string,
-      commitment: Commitment,
-      options?: any,
-    ): AxiosPromise<BalanceResponse> {
-      return localVarFp
-        .getBalance(environment, index, accountId, commitment, options)
-        .then((request) => request(axios, basePath))
+    getBalance(environment: string, index: number, accountId: string, options?: any): AxiosPromise<BalanceResponse> {
+      return localVarFp.getBalance(environment, index, accountId, options).then((request) => request(axios, basePath))
     },
     /**
      *
@@ -1887,7 +1830,6 @@ export interface AccountApiInterface {
    * @param {string} environment
    * @param {number} index
    * @param {string} accountId
-   * @param {Commitment} commitment
    * @param {*} [options] Override http request option.
    * @throws {RequiredError}
    * @memberof AccountApiInterface
@@ -1896,7 +1838,6 @@ export interface AccountApiInterface {
     environment: string,
     index: number,
     accountId: string,
-    commitment: Commitment,
     options?: AxiosRequestConfig,
   ): AxiosPromise<BalanceResponse>
 
@@ -1996,20 +1937,13 @@ export class AccountApi extends BaseAPI implements AccountApiInterface {
    * @param {string} environment
    * @param {number} index
    * @param {string} accountId
-   * @param {Commitment} commitment
    * @param {*} [options] Override http request option.
    * @throws {RequiredError}
    * @memberof AccountApi
    */
-  public getBalance(
-    environment: string,
-    index: number,
-    accountId: string,
-    commitment: Commitment,
-    options?: AxiosRequestConfig,
-  ) {
+  public getBalance(environment: string, index: number, accountId: string, options?: AxiosRequestConfig) {
     return AccountApiFp(this.configuration)
-      .getBalance(environment, index, accountId, commitment, options)
+      .getBalance(environment, index, accountId, options)
       .then((request) => request(this.axios, this.basePath))
   }
 

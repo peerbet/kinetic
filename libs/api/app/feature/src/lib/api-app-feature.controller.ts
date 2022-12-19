@@ -1,5 +1,4 @@
 import { ApiAppDataAccessService, AppConfig, AppHealth } from '@kin-kinetic/api/app/data-access'
-import { getAppKey } from '@kin-kinetic/api/core/util'
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common'
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 
@@ -13,7 +12,7 @@ export class ApiAppFeatureController {
   @ApiParam({ name: 'index', type: 'integer' })
   @ApiResponse({ type: AppConfig })
   app(@Param('environment') environment: string, @Param('index', ParseIntPipe) index: number) {
-    return this.service.getAppConfig(getAppKey(environment, index))
+    return this.service.getAppConfig(environment, index)
   }
 
   @Get(':environment/:index/health')
@@ -21,6 +20,6 @@ export class ApiAppFeatureController {
   @ApiParam({ name: 'index', type: 'integer' })
   @ApiResponse({ type: AppHealth })
   appHealth(@Param('environment') environment: string, @Param('index', ParseIntPipe) index: number) {
-    return this.service.getAppHealth(getAppKey(environment, index))
+    return this.service.getAppHealth(environment, index)
   }
 }

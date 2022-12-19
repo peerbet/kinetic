@@ -1,11 +1,9 @@
 import { Box, useToast } from '@chakra-ui/react'
 import { Keypair } from '@kin-kinetic/keypair'
 import { KineticSdk, Transaction } from '@kin-kinetic/sdk'
-import { Commitment } from '@kin-kinetic/solana'
 import { ButtonGroup, Field, Form, SubmitButton } from '@saas-ui/react'
 import { useState } from 'react'
 import { WebToolboxUiCard } from './web-toolbox-ui-card'
-import { WebToolboxUiSelectCommitment } from './web-toolbox-ui-select-commitment'
 
 export function WebToolboxUiCloseAccount({
   finished,
@@ -17,7 +15,6 @@ export function WebToolboxUiCloseAccount({
   sdk: KineticSdk
 }) {
   const toast = useToast()
-  const [commitment, setCommitment] = useState<Commitment>(Commitment.Confirmed)
   const [error, setError] = useState<unknown | undefined>()
   const [loading, setLoading] = useState<boolean>(false)
   const [response, setResponse] = useState<Transaction | undefined>()
@@ -28,7 +25,7 @@ export function WebToolboxUiCloseAccount({
     setLoading(true)
 
     sdk
-      .closeAccount({ account, referenceType: 'Toolbox Close', commitment })
+      .closeAccount({ account, referenceType: 'Toolbox Close' })
       .then((res) => {
         setResponse(res)
         setLoading(false)
@@ -62,7 +59,6 @@ export function WebToolboxUiCloseAccount({
               Close Account
             </SubmitButton>
           </Box>
-          <WebToolboxUiSelectCommitment commitment={commitment} setCommitment={setCommitment} />
           <Box>
             <Field size="lg" name="account" placeholder="Account" type="text" rules={{ required: true }} />
           </Box>

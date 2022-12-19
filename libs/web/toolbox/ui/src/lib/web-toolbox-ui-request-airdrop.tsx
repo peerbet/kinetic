@@ -6,7 +6,6 @@ import { Commitment } from '@kin-kinetic/solana'
 import { ButtonGroup, Field, Form, SubmitButton } from '@saas-ui/react'
 import { useState } from 'react'
 import { WebToolboxUiCard } from './web-toolbox-ui-card'
-import { WebToolboxUiSelectCommitment } from './web-toolbox-ui-select-commitment'
 
 export function WebToolboxUiRequestAirdrop({
   keypair,
@@ -18,7 +17,6 @@ export function WebToolboxUiRequestAirdrop({
   selectedMint: AppConfigMint | undefined
 }) {
   const toast = useToast()
-  const [commitment, setCommitment] = useState<Commitment>(Commitment.Confirmed)
   const [error, setError] = useState<unknown | undefined>()
   const [loading, setLoading] = useState<boolean>(false)
   const [response, setResponse] = useState<RequestAirdropResponse | undefined>()
@@ -32,7 +30,7 @@ export function WebToolboxUiRequestAirdrop({
       .requestAirdrop({
         account: keypair.publicKey,
         amount: amount,
-        commitment,
+        commitment: Commitment.Confirmed,
         mint: selectedMint?.publicKey,
       })
       .then((res) => {
@@ -70,7 +68,6 @@ export function WebToolboxUiRequestAirdrop({
               Request Airdrop
             </SubmitButton>
           </Box>
-          <WebToolboxUiSelectCommitment commitment={commitment} setCommitment={setCommitment} />
           <Box>
             <Field
               size="lg"

@@ -7,11 +7,21 @@ import {
   useMultiStyleConfig,
 } from '@chakra-ui/react'
 import { cx } from '@chakra-ui/utils'
+
+import { FieldErrors, FormProps } from '@saas-ui/forms'
 import * as React from 'react'
 
-import { PasswordForm, PasswordFormProps } from './password-form'
+import { PasswordForm } from './password-form'
 
-export const AuthForm: React.FC<PasswordFormProps> = (props) => {
+export interface AuthFormProps
+  extends Omit<FormProps<any>, 'defaultValues' | 'onSubmit' | 'onError' | 'title'>,
+    ThemingProps<'AuthForm'> {
+  onSuccess?: (data: any) => void
+  onError?: (error: Error) => void
+  onValidationError?: (errors: FieldErrors) => void
+}
+
+export const AuthForm: React.FC<AuthFormProps> = (props) => {
   const { ...formProps } = props
 
   return (

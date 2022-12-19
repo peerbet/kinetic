@@ -10,6 +10,3 @@ export enum JobStatus {
 }
 
 registerEnumType(JobStatus, { name: 'JobStatus' })
-
-// Internal type from Bull that's not exported
-export type JobStatusClean = 'completed' | 'wait' | 'active' | 'delayed' | 'failed' | 'paused'
