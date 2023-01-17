@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "build": "yarn build:web && yarn prisma generate && yarn build:api",
-    "build:api": "nx build api --prod",
+    "build:api": "nx build api",
     "build:sdk": "yarn openapi-generator-cli generate -i ./api-swagger.json -g typescript-axios -o libs/sdk/src/generated --additional-properties=withInterfaces=true && nx format:write --uncommitted",
     "build:web": "nx build web --prod",
     "build:web-sdk": "graphql-codegen --config libs/web/util/sdk/src/codegen.yml",
