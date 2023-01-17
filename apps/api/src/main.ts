@@ -9,6 +9,11 @@ import redirectSSL from 'redirect-ssl'
 import { json } from 'express'
 import { AppModule } from './app/app.module'
 
+process.on('unhandledRejection', (reason, p) => {
+  console.log('SIMON Unhandled Rejection at: Promise', p, 'reason:', reason);
+  console.log(reason.stack);
+});
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true })
   const config = app.get(ApiConfigDataAccessService)
