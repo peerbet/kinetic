@@ -11,6 +11,7 @@ import { AppModule } from './app/app.module'
 
 process.on('unhandledRejection', (reason, p) => {
   console.log('SIMON Unhandled Rejection at: Promise', p, 'reason:', reason);
+  // @ts-ignore
   console.log(reason.stack);
 });
 
