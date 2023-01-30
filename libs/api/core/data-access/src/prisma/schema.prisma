@@ -156,6 +156,7 @@ model Transaction {
   ip                      String?
   mint                    String?
   processingDuration      Int?
+  reference               String?
   referenceId             String?
   referenceType           String?
   signature               String?
