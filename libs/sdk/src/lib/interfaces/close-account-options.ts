@@ -1,8 +1,9 @@
-import { Commitment, PublicKeyString } from '@kin-kinetic/solana'
+import { PublicKeyString } from '@kin-kinetic/solana'
+import { Commitment } from '../../generated'
 
 export interface CloseAccountOptions {
-  commitment?: Commitment
   account: PublicKeyString
+  commitment?: Commitment
   mint?: string
   referenceId?: string
   referenceType?: string

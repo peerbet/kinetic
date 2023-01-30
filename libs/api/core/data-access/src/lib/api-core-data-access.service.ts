@@ -2,9 +2,9 @@ import { AirdropConfig } from '@kin-kinetic/api/airdrop/util'
 import { hashPassword } from '@kin-kinetic/api/auth/util'
 import { ProvisionedCluster } from '@kin-kinetic/api/cluster/util'
 import { ApiConfigDataAccessService } from '@kin-kinetic/api/config/data-access'
-import { getVerboseLogger } from '@kin-kinetic/api/core/util'
+import { parseAppKey } from '@kin-kinetic/api/core/util'
 import { Keypair } from '@kin-kinetic/keypair'
-import { getPublicKey, Solana } from '@kin-kinetic/solana'
+import { getPublicKey } from '@kin-kinetic/solana'
 import { Injectable, Logger, NotFoundException, OnModuleInit, UnauthorizedException } from '@nestjs/common'
 import { Counter } from '@opentelemetry/api-metrics'
 import {
@@ -22,6 +22,7 @@ import {
   WalletType,
 } from '@prisma/client'
 import { MetricService } from 'nestjs-otel'
+import { ApiCoreCacheService } from './cache/api-core-cache.service'
 
 export type AppEnvironment = AppEnv & {
   app: App
@@ -34,12 +35,15 @@ export type AppEnvironment = AppEnv & {
 export class ApiCoreDataAccessService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger(ApiCoreDataAccessService.name)
   readonly airdropConfig = new Map<string, Omit<AirdropConfig, 'connection'>>()
-  readonly connections = new Map<string, Solana>()
 
   private getAppByEnvironmentIndexCounter: Counter
   private getAppByIndexCounter: Counter
 
-  constructor(readonly config: ApiConfigDataAccessService, readonly metrics: MetricService) {
+  constructor(
+    readonly cache: ApiCoreCacheService,
+    readonly config: ApiConfigDataAccessService,
+    readonly metrics: MetricService,
+  ) {
     super()
   }
 
@@ -166,17 +170,8 @@ export class ApiCoreDataAccessService extends PrismaClient implements OnModuleIn
     })
   }
 
-  async getAppEnvironment(environment: string, index: number): Promise<{ appEnv: AppEnvironment; appKey: string }> {
-    const appEnv = await this.getAppByEnvironmentIndex(environment, index)
-    const appKey = this.getAppKey(environment, index)
-    return {
-      appEnv,
-      appKey,
-    }
-  }
-
-  getAppByEnvironmentIndex(environment: string, index: number): Promise<AppEnvironment> {
-    const appKey = this.getAppKey(environment, index)
+  getAppEnvironmentByAppKey(appKey: string): Promise<AppEnvironment> {
+    const { environment, index } = parseAppKey(appKey)
     this.getAppByEnvironmentIndexCounter?.add(1, { appKey })
     return this.appEnv.findFirst({
       where: { app: { index }, name: environment },
@@ -223,25 +218,6 @@ export class ApiCoreDataAccessService extends PrismaClient implements OnModuleIn
 
   getAppEnvById(appEnvId: string) {
     return this.appEnv.findUnique({ where: { id: appEnvId }, include: { app: true } })
-  }
-
-  getAppKey(environment: string, index: number): string {
-    return `app-${index}-${environment}`
-  }
-
-  async getSolanaConnection(environment: string, index: number): Promise<Solana> {
-    const appKey = this.getAppKey(environment, index)
-    if (!this.connections.has(appKey)) {
-      const env = await this.getAppByEnvironmentIndex(environment, index)
-      this.connections.set(
-        appKey,
-        new Solana(env.cluster.endpointPrivate, {
-          logger: getVerboseLogger(`@kin-kinetic/solana:${appKey}`),
-        }),
-      )
-      this.logger.log(`Created new connection for ${appKey}`)
-    }
-    return this.connections.get(appKey)
   }
 
   async getUserByEmail(email: string) {

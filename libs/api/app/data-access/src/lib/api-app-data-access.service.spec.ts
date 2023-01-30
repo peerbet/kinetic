@@ -1,4 +1,5 @@
 import { ApiCoreDataAccessModule } from '@kin-kinetic/api/core/data-access'
+import { ApiKineticDataAccessModule } from '@kin-kinetic/api/kinetic/data-access'
 import { ApiWalletDataAccessModule } from '@kin-kinetic/api/wallet/data-access'
 import { Test } from '@nestjs/testing'
 import { ApiAppDataAccessService } from './api-app-data-access.service'
@@ -8,7 +9,7 @@ describe('ApiAppDataAccessService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [ApiCoreDataAccessModule, ApiWalletDataAccessModule],
+      imports: [ApiCoreDataAccessModule, ApiKineticDataAccessModule, ApiWalletDataAccessModule],
       providers: [ApiAppDataAccessService],
     }).compile()
 

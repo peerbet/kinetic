@@ -1,17 +1,19 @@
 import { ApiCoreDataAccessService } from '@kin-kinetic/api/core/data-access'
+import { getAppKey } from '@kin-kinetic/api/core/util'
 import { HttpService } from '@nestjs/axios'
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common'
-import { App, AppEnv, Transaction, WalletBalance, WebhookDirection, WebhookType } from '@prisma/client'
+import { App, AppEnv, Transaction, WebhookDirection, WebhookType } from '@prisma/client'
 import { AxiosRequestHeaders } from 'axios'
 import { Response } from 'express'
 import { IncomingHttpHeaders } from 'http'
 import { switchMap } from 'rxjs'
 
 interface WebhookOptions {
+  balance?: number
+  publicKey?: string
   headers?: AxiosRequestHeaders
-  balance?: WalletBalance
-  transaction?: Transaction
   type: WebhookType
+  transaction?: Transaction
 }
 
 function isValidWebhookType(type: string) {
@@ -26,7 +28,7 @@ export class ApiWebhookDataAccessService {
   constructor(private readonly data: ApiCoreDataAccessService, private readonly http: HttpService) {}
 
   sendWebhook(appEnv: AppEnv & { app: App }, options: WebhookOptions) {
-    const appKey = this.data.getAppKey(appEnv.name, appEnv.app?.index)
+    const appKey = getAppKey(appEnv.name, appEnv.app?.index)
     switch (options.type) {
       case WebhookType.Balance:
         if (!appEnv.webhookDebugging) {
@@ -70,8 +72,7 @@ export class ApiWebhookDataAccessService {
   }
 
   async storeIncomingWebhook(
-    environment: string,
-    index: number,
+    appKey: string,
     type: string,
     headers: IncomingHttpHeaders,
     payload: object,
@@ -85,7 +86,7 @@ export class ApiWebhookDataAccessService {
 
     try {
       // Get the app by Index
-      const appEnv = await this.data.getAppByEnvironmentIndex(environment, index)
+      const appEnv = await this.data.getAppEnvironmentByAppKey(appKey)
       if (!appEnv.webhookDebugging) {
         this.logger.warn(`storeIncomingWebhook ignoring request, webhookDebugging is disabled`)
         res.statusCode = 400
@@ -134,11 +135,7 @@ export class ApiWebhookDataAccessService {
   private sendBalanceWebhook(appEnv: AppEnv & { app: App }, options: WebhookOptions) {
     const url = this.getDebugUrl(appEnv, options.type, appEnv.webhookBalanceUrl)
     const headers = this.getAppEnvHeaders(appEnv, options)
-    const payload = {
-      ...options.balance,
-      balance: options.balance?.balance?.toString(),
-      change: options.balance?.change?.toString(),
-    }
+    const payload = { balance: options.balance, publicKey: options.publicKey }
     return new Promise((resolve, reject) => {
       this.http
         .post(url, payload, { headers })

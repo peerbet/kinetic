@@ -6,6 +6,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { UserRole } from '@prisma/client'
 import { CookieOptions } from 'express-serve-static-core'
 import * as fs from 'fs'
+import * as Redis from 'ioredis'
+import { OpenTelemetryModuleOptions } from 'nestjs-otel/lib/interfaces'
 import { join } from 'path'
 import { ProvisionedApp } from './entity/provisioned-app.entity'
 import { WebConfig } from './entity/web-config.entity'
@@ -67,6 +69,16 @@ export class ApiConfigDataAccessService {
     return this.config.get('api.version')
   }
 
+  get cache(): { [key: string]: { [key: string]: { ttl: number } } } {
+    return {
+      solana: {
+        getLatestBlockhash: {
+          ttl: this.config.get('cache.solana.getLatestBlockhash.ttl'),
+        },
+      },
+    }
+  }
+
   get cookieDomains(): string[] {
     return this.config.get('cookie.domains')
   }
@@ -78,7 +90,11 @@ export class ApiConfigDataAccessService {
   cookieOptions(hostname: string): CookieOptions {
     const found = this.cookieDomains.find((domain) => hostname.endsWith(domain))
     if (!found) {
-      this.logger.warn(`Not configured to set cookies for ${hostname}`)
+      this.logger.warn(
+        `Not configured to set cookies for ${hostname}. cookieDomains: ${
+          this.cookieDomains.length ? this.cookieDomains.join(', ') : 'not configured'
+        }`,
+      )
     }
     const isSecure = this.apiUrl.startsWith('https')
     return {
@@ -197,6 +213,15 @@ export class ApiConfigDataAccessService {
     return this.config.get('host')
   }
 
+  get openTelemetryConfig(): OpenTelemetryModuleOptions {
+    return {
+      metrics: {
+        apiMetrics: { enable: this.metricsEnabled },
+        hostMetrics: this.metricsEnabled,
+      },
+    }
+  }
+
   get port() {
     return this.config.get('port')
   }
@@ -209,13 +234,30 @@ export class ApiConfigDataAccessService {
     return this.config.get('queue.closeAccount.start')
   }
 
-  get redisConfig() {
+  get redisOptions(): Redis.RedisOptions {
+    // Parse the Redis URL to get the host, port, and password, etc.
+    const parsed = new URL(this.redisUrl)
+
+    // The URL class encodes the password if it contains special characters, so we need to decode it.
+    // https://nodejs.org/dist/latest-v18.x/docs/api/url.html#urlpassword
+    // This caused an issue because Azure Cache for Redis generates passwords that end with an equals sign.
+    const password = parsed.password ? decodeURIComponent(parsed.password) : undefined
+
     return {
-      host: this.config.get('redis.host'),
-      port: this.config.get('redis.port'),
-      username: this.config.get('redis.username'),
-      password: this.config.get('redis.password'),
+      host: parsed.hostname,
+      port: Number(parsed.port),
+      password: password,
+      username: parsed.username,
+      tls: parsed.protocol?.startsWith('rediss')
+        ? {
+            rejectUnauthorized: false,
+          }
+        : undefined,
     }
+  }
+
+  get redisUrl() {
+    return this.config.get('redis.url')
   }
 
   get solanaDevnetEnabled(): boolean {

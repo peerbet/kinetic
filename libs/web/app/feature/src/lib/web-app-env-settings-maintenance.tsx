@@ -4,7 +4,6 @@ import {
   AccordionIcon,
   AccordionItem,
   AccordionPanel,
-  AlertIcon,
   Box,
   ButtonGroup,
   Flex,
@@ -62,7 +61,7 @@ export function WebAppEnvSettingsMaintenance({ env }: { app: App; env: AppEnv })
         if (!data?.stats?.transactionCount || !data?.stats?.transactionCount[curr]) {
           return acc
         }
-        return acc + data.stats.transactionCount[curr]!
+        return acc + Number(data.stats.transactionCount[curr] ?? 0)
       }, 0)
     : 0
 
@@ -76,13 +75,6 @@ export function WebAppEnvSettingsMaintenance({ env }: { app: App; env: AppEnv })
           </Text>
         </Box>
       </Flex>
-      {env.webhookDebugging ? (
-        <WebUiAlert status="warning">
-          <AlertIcon />
-          Debugging enabled, webhooks will not be sent to your server. Inspect the transactions to see the webhook
-          payloads.
-        </WebUiAlert>
-      ) : null}
       <WebUiCard px={2}>
         <Accordion defaultIndex={[0]} allowMultiple>
           <AccordionItem>
@@ -108,7 +100,7 @@ export function WebAppEnvSettingsMaintenance({ env }: { app: App; env: AppEnv })
                       {stats
                         .filter((stat) => count[stat])
                         .map((stat) => {
-                          const transactionCount = count[stat]! ?? 0
+                          const transactionCount = count[stat] ?? 0
                           return (
                             <ListItem key={stat}>
                               <ListItemLabel

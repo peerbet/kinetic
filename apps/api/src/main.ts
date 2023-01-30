@@ -5,9 +5,13 @@ import { NestFactory } from '@nestjs/core'
 import { OgmaService } from '@ogma/nestjs-module'
 import { exec } from 'child_process'
 import cookieParser from 'cookie-parser'
-import redirectSSL from 'redirect-ssl'
 import { json } from 'express'
+import redirectSSL from 'redirect-ssl'
 import { AppModule } from './app/app.module'
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.log('UNHANDLED REJECTION at:', promise, 'reason:', reason)
+})
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true })
@@ -16,7 +20,7 @@ async function bootstrap() {
   app.useLogger(logger)
   await OpenTelemetrySdk.start(config.metricsConfig)
   app.setGlobalPrefix(config.prefix)
-  app.useGlobalPipes(new ValidationPipe({ transform: true }))
+  app.useGlobalPipes(new ValidationPipe({ forbidUnknownValues: false, transform: true }))
   app.enableCors(config.cors)
   app.use(redirectSSL.create({ enabled: config.isProduction }))
   config.configureSwagger(app)

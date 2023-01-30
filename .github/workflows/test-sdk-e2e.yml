@@ -17,7 +17,7 @@ env:
   DATABASE_URL: 'postgresql://prisma:prisma@localhost:5432/prisma?schema=kinetic'
   JWT_SECRET: 'KineticJwtSecret!'
   NX_CLOUD_DISTRIBUTED_EXECUTION: false
-  REDIS_HOST: 'localhost'
+  REDIS_URL: 'redis://localhost:6379'
   SOLANA_LOCAL_ENABLED: true
   SOLANA_LOCAL_MINT_KIN: '*MoGaMuJnB3k8zXjBYBnHxHG47vWcW3nyb7bFYvdVzek,5,Kin'
   SOLANA_LOCAL_MINT_KIN_AIRDROP_SECRET: 'UvfuF3FPqLyvS8xGjSu4AUfdsY5QvLdnin8SKBLAi3UqgbmEWCDshPY3UcxvBgRAqHLzh5Ni1eypLVZArsis6FF'
@@ -50,11 +50,11 @@ jobs:
         name: Checkout [main]
         with:
           fetch-depth: 0
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: '**/node_modules'
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: '16'
       - run: yarn install --frozen-lockfile
@@ -80,13 +80,13 @@ jobs:
         image: ghcr.io/kin-labs/kinetic-solana-network:latest
         ports: ['8899:8899', '8900:8900']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         name: Checkout pr
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: '**/node_modules'
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: '16'
       - run: yarn install --frozen-lockfile

@@ -129,11 +129,12 @@ describe('KineticSdk (e2e) - Account', () => {
       // Create new account
       const keypair = Keypair.random()
       const tx = await sdk.createAccount({ owner: keypair, commitment: Commitment.Finalized })
+      expect(tx.errors).toEqual([])
       expect(tx).not.toBeNull()
       expect(tx.mint).toEqual(DEFAULT_MINT)
       const { signature, errors } = tx
-      expect(typeof signature).toBe('string')
       expect(errors).toEqual([])
+      expect(typeof signature).toBe('string')
       // Close account
       const closeTx = await sdk.closeAccount({ account: keypair.publicKey })
       expect(closeTx).not.toBeNull()
@@ -167,7 +168,7 @@ describe('KineticSdk (e2e) - Account', () => {
     it('should not close with non-existing tokens for a mint', async () => {
       await expect(
         async () => await sdk.closeAccount({ account: daveKeypair.publicKey, mint: usdcMint }),
-      ).rejects.toThrow('Account has no tokens for the specified mint')
+      ).rejects.toThrow('Account has no tokens')
     })
 
     it('should not close when close authority is not set', async () => {
@@ -180,11 +181,12 @@ describe('KineticSdk (e2e) - Account', () => {
       // Create new account
       const keypair = Keypair.random()
       const tx = await sdk.createAccount({ owner: keypair, commitment: Commitment.Finalized })
+      expect(tx.errors).toEqual([])
       expect(tx).not.toBeNull()
       expect(tx.mint).toEqual(DEFAULT_MINT)
       const { signature, errors } = tx
-      expect(typeof signature).toBe('string')
       expect(errors).toEqual([])
+      expect(typeof signature).toBe('string')
 
       const airdrop = await sdk.requestAirdrop({
         account: keypair.publicKey,

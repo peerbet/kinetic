@@ -1,35 +1,72 @@
 import { ApiCoreDataAccessService } from '@kin-kinetic/api/core/data-access'
+import { getAppKey } from '@kin-kinetic/api/core/util'
+import { ApiKineticService } from '@kin-kinetic/api/kinetic/data-access'
 import { ApiWebhookDataAccessService } from '@kin-kinetic/api/webhook/data-access'
 import { Keypair } from '@kin-kinetic/keypair'
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
-import { ClusterStatus, WebhookType } from '@prisma/client'
+import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
+import { ClusterStatus, WalletType, WebhookType } from '@prisma/client'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { WalletAirdropResponse } from './entity/wallet-airdrop-response.entity'
-import { WalletBalance } from './entity/wallet-balance.entity'
-import { WalletType } from './entity/wallet-type.enum'
-import { Wallet } from './entity/wallet.entity'
 
 @Injectable()
-export class ApiWalletUserDataAccessService {
+export class ApiWalletUserDataAccessService implements OnModuleInit {
   private readonly logger = new Logger(ApiWalletUserDataAccessService.name)
-  constructor(private readonly data: ApiCoreDataAccessService, private readonly webhook: ApiWebhookDataAccessService) {}
+  constructor(
+    private readonly data: ApiCoreDataAccessService,
+    private readonly kinetic: ApiKineticService,
+    private readonly webhook: ApiWebhookDataAccessService,
+  ) {}
+
+  async onModuleInit(): Promise<void> {
+    // MIGRATION: This migration will be removed in v1.0.0
+    // The wallet balance history will no longer be stored in the database
+    // Any old records will be deleted
+    const balances = await this.data.walletBalance.count()
+    if (balances > 0) {
+      this.logger.warn(`MIGRATION: Deleting ${balances} wallet balance records`)
+      await this.data.walletBalance.deleteMany()
+    }
+  }
 
   async checkBalance() {
     const appEnvs = await this.data.appEnv.findMany({
-      where: { cluster: { status: ClusterStatus.Active } },
+      where: {
+        cluster: { status: ClusterStatus.Active },
+        webhookBalanceEnabled: true,
+        webhookBalanceThreshold: { not: null },
+      },
       include: {
         app: true,
         cluster: true,
         wallets: {
           include: {
-            balances: { orderBy: { createdAt: 'desc' }, take: 1 },
+            appMints: true,
           },
         },
       },
     })
+
     for (const appEnv of appEnvs) {
-      for (const wallet of appEnv.wallets) {
-        await this.updateWalletBalance(appEnv.id, appEnv?.name, appEnv?.app.index, wallet)
+      const appKey = getAppKey(appEnv.name, appEnv.app.index)
+      const solana = await this.kinetic.getSolanaConnection(appKey)
+
+      for (const { publicKey } of appEnv.wallets.filter((w) => w.appMints?.length)) {
+        const lamports = await solana.getBalanceSol(publicKey)
+        const balance = lamports / LAMPORTS_PER_SOL
+        const threshold = Number(appEnv.webhookBalanceThreshold)
+
+        const isBelowThreshold = balance / LAMPORTS_PER_SOL < threshold
+
+        this.logger.debug(
+          `${appKey}: Balance for ${publicKey} is ${
+            isBelowThreshold ? 'below' : 'above'
+          } threshold (${balance}/${threshold} SOL)`,
+        )
+
+        if (isBelowThreshold) {
+          await this.webhook.sendWebhook(appEnv, { type: WebhookType.Balance, balance, publicKey })
+          this.logger.debug(`${appKey}: Sending Wallet Balance Webhook: ${publicKey}`)
+        }
       }
     }
   }
@@ -100,7 +137,8 @@ export class ApiWalletUserDataAccessService {
   ): Promise<WalletAirdropResponse> {
     const wallet = await this.userWallet(userId, appEnvId, walletId)
     const appEnv = await this.data.getAppEnvById(appEnvId)
-    const solana = await this.data.getSolanaConnection(appEnv.name, appEnv.app.index)
+    const appKey = getAppKey(appEnv.name, appEnv.app.index)
+    const solana = await this.kinetic.getSolanaConnection(appKey)
     const floatAmount = parseFloat(amount?.toString())
     const signature = await solana.requestAirdrop(wallet.publicKey, floatAmount * LAMPORTS_PER_SOL)
 
@@ -109,23 +147,16 @@ export class ApiWalletUserDataAccessService {
     }
   }
 
-  async userWalletBalance(userId: string, appEnvId: string, walletId: string): Promise<WalletBalance> {
+  async userWalletBalance(userId: string, appEnvId: string, walletId: string): Promise<string> {
     const wallet = await this.userWallet(userId, appEnvId, walletId)
     const appEnv = await this.data.getAppEnvById(appEnvId)
     await this.data.ensureAppUser(userId, appEnv.app.id)
-    const solana = await this.data.getSolanaConnection(appEnv.name, appEnv.app.index)
+    const appKey = getAppKey(appEnv.name, appEnv.app.index)
+    const solana = await this.kinetic.getSolanaConnection(appKey)
 
     const balance = await solana.getBalanceSol(wallet.publicKey)
 
-    return { balance: BigInt(balance) }
-  }
-
-  async userWalletBalances(userId: string, appEnvId: string, walletId: string): Promise<WalletBalance[]> {
-    const wallet = await this.userWallet(userId, appEnvId, walletId)
-    return this.data.walletBalance.findMany({
-      where: { appEnvId, walletId: wallet.id },
-      orderBy: { createdAt: 'desc' },
-    })
+    return balance.toString()
   }
 
   async userWallets(userId: string, appEnvId: string) {
@@ -152,32 +183,5 @@ export class ApiWalletUserDataAccessService {
       throw new NotFoundException(`Wallet with id ${walletId} does not exist.`)
     }
     return wallet
-  }
-
-  private storeWalletBalance(appEnvId: string, walletId: string, balance: number, change: number) {
-    return this.data.walletBalance.create({
-      data: { appEnvId, balance, change, walletId },
-      include: { appEnv: { include: { app: true } }, wallet: { select: { id: true, publicKey: true } } },
-    })
-  }
-
-  private async updateWalletBalance(appEnvId: string, environment: string, index: number, wallet: Wallet) {
-    const appKey = this.data.getAppKey(environment, index)
-    const solana = await this.data.getSolanaConnection(environment, index)
-    const current = wallet.balances?.length ? wallet.balances[0].balance : 0
-    const balance = await solana.getBalanceSol(wallet.publicKey)
-    if (BigInt(balance) !== current) {
-      const change = balance - Number(current)
-      const stored = await this.storeWalletBalance(appEnvId, wallet.id, balance, change)
-      const { appEnv } = await this.data.getAppEnvironment(environment, index)
-      if (Number(appEnv.webhookBalanceThreshold) <= balance && appEnv.webhookBalanceEnabled) {
-        this.webhook.sendWebhook(appEnv, { type: WebhookType.Balance, balance: stored })
-      }
-      this.logger.verbose(
-        `${appKey}: Updated Wallet Balance: ${wallet.publicKey} ${current} => ${balance} (${change} SOL) threshold (${
-          appEnv.webhookBalanceThreshold ?? 'None'
-        } )`,
-      )
-    }
   }
 }

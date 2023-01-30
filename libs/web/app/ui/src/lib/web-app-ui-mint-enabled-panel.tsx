@@ -51,7 +51,7 @@ export function WebAppUiMintEnabledPanel({
             <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center">
               <WebUiIdenticon size="sm" name={`${appMint?.wallet?.publicKey}`} />
               <Flex flexGrow={1}>
-                <Code colorScheme="teal">
+                <Code colorScheme="purple">
                   <WebUiAddress address={appMint?.wallet?.publicKey || ''} />
                 </Code>
               </Flex>
@@ -64,11 +64,11 @@ export function WebAppUiMintEnabledPanel({
               <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center" key={item.id}>
                 <WebUiIdenticon size="sm" name={`${item?.publicKey}`} />
                 <Flex flexGrow={1}>
-                  <Code colorScheme="teal">
+                  <Code colorScheme="purple">
                     <WebUiAddress address={item?.publicKey || ''} />
                   </Code>
                 </Flex>
-                <Button size="sm" onClick={() => selectWallet(appMint.id, item.id!)}>
+                <Button size="sm" onClick={() => selectWallet(appMint.id, item.id)}>
                   Use as Fee Payer
                 </Button>
               </Stack>

@@ -15,7 +15,8 @@ import { ApiQueueCloseAccountModule } from './queue/close-account/api-queue-clos
     BullModule.forRootAsync({
       imports: [ApiConfigDataAccessModule],
       useFactory: async (config: ApiConfigDataAccessService) => ({
-        redis: config.redisConfig,
+        prefix: 'kinetic:queue',
+        redis: config.redisOptions,
       }),
       inject: [ApiConfigDataAccessService],
     }),

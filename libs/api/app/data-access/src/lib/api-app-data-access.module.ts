@@ -1,4 +1,5 @@
 import { ApiCoreDataAccessModule } from '@kin-kinetic/api/core/data-access'
+import { ApiKineticDataAccessModule } from '@kin-kinetic/api/kinetic/data-access'
 import { ApiWalletDataAccessModule } from '@kin-kinetic/api/wallet/data-access'
 import { Module } from '@nestjs/common'
 import { ApiAppAdminDataAccessService } from './api-app-admin-data-access.service'
@@ -22,6 +23,6 @@ import { ApiAppUserDataAccessService } from './api-app-user-data-access.service'
     ApiAppEnvUserDataAccessService,
     ApiAppUserDataAccessService,
   ],
-  imports: [ApiCoreDataAccessModule, ApiWalletDataAccessModule],
+  imports: [ApiCoreDataAccessModule, ApiKineticDataAccessModule, ApiWalletDataAccessModule],
 })
 export class ApiAppDataAccessModule {}

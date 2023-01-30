@@ -16,6 +16,7 @@ import {
   GetAccountInfoOptions,
   GetBalanceOptions,
   GetHistoryOptions,
+  GetKineticTransactionOptions,
   GetTokenAccountsOptions,
   GetTransactionOptions,
   KineticSdkConfig,
@@ -64,11 +65,15 @@ export class KineticSdk {
   }
 
   getExplorerUrl(path: string): string | undefined {
-    return this.internal?.appConfig?.environment?.explorer?.replace(`{path}`, path)
+    return this.internal.getExplorerUrl(path)
   }
 
   getHistory(options: GetHistoryOptions): Promise<HistoryResponse[]> {
     return this.internal.getHistory(options)
+  }
+
+  getKineticTransaction(options: GetKineticTransactionOptions): Promise<Transaction[]> {
+    return this.internal.getKineticTransaction(options)
   }
 
   getTokenAccounts(options: GetTokenAccountsOptions): Promise<string[]> {
