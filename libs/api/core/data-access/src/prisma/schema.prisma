@@ -156,6 +156,10 @@ model Transaction {
   ip                      String?
   mint                    String?
   processingDuration      Int?
+  appKey                  String?
+  blockhash               String?
+  headers                 String?
+  lastValidBlockHeight    String?
   reference               String?
   referenceId             String?
   referenceType           String?
