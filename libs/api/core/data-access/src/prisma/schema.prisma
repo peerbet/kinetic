@@ -158,7 +158,7 @@ model Transaction {
   processingDuration      Int?
   appKey                  String?
   blockhash               String?
-  headers                 String?
+  headers                 Json?
   lastValidBlockHeight    String?
   reference               String?
   referenceId             String?
