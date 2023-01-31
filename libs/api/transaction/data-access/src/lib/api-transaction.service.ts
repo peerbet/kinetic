@@ -129,7 +129,7 @@ export class ApiTransactionService implements OnModuleInit {
     this.makeTransferRequestCounter = this.core.metrics.getCounter(`api_transaction_make_transfer_request_counter`, {
       description: 'Number of requests to makeTransfer',
     })
-    this.migrateTransactionReferences()
+    await this.migrateTransactionReferences()
   }
 
   async makeTransfer(req: Request, input: MakeTransferRequest): Promise<TransactionWithErrors> {
