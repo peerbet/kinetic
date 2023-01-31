@@ -159,7 +159,7 @@ model Transaction {
   appKey                  String?
   blockhash               String?
   headers                 Json?
-  lastValidBlockHeight    String?
+  lastValidBlockHeight    Int?
   reference               String?
   referenceId             String?
   referenceType           String?
